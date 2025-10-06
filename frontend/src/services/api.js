@@ -1,11 +1,11 @@
 // src/services/api.js
 import axios from "axios";
 
+const baseURL = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 const api = axios.create({
-  baseURL: "http://localhost:8000", // backend URL
+  baseURL,
 });
 
-// attach token if present
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
