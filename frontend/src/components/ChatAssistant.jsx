@@ -3,8 +3,9 @@ import { Card } from './ui/card';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import api from '../services/api';
 
-export function ChatAssistant({ onClose, addAuditLog }) {
+export function ChatAssistant({ onClose, addAuditLog, caseData }) {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -33,13 +34,42 @@ export function ChatAssistant({ onClose, addAuditLog }) {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage);
-      setMessages(prev => [...prev, aiResponse]);
+    try {
+      // Use real API call if we have case data with UFDR file ID
+      if (caseData && caseData.id) {
+        const response = await api.get(`/chat/conv/${caseData.id}`, {
+          params: { q: inputMessage }
+        });
+        
+        const aiResponse = {
+          id: messages.length + 2,
+          type: 'assistant',
+          content: response.data.answer,
+          timestamp: new Date().toLocaleString(),
+          citations: [`Found ${response.data.num_matches} matches`]
+        };
+        
+        setMessages(prev => [...prev, aiResponse]);
+        addAuditLog('AI Response Generated', `Response to query about: "${inputMessage}"`);
+      } else {
+        // Fallback to simulated response
+        const aiResponse = generateAIResponse(inputMessage);
+        setMessages(prev => [...prev, aiResponse]);
+        addAuditLog('AI Response Generated', `Response to query about: "${inputMessage}"`);
+      }
+    } catch (error) {
+      console.error('API call failed:', error);
+      const errorResponse = {
+        id: messages.length + 2,
+        type: 'assistant',
+        content: 'Sorry, I encountered an error processing your request. Please try again.',
+        timestamp: new Date().toLocaleString(),
+        citations: []
+      };
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
       setIsTyping(false);
-      addAuditLog('AI Response Generated', `Response to query about: "${inputMessage}"`);
-    }, 2000);
+    }
   };
 
   const generateAIResponse = (query) => {

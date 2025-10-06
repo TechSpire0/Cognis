@@ -16,19 +16,20 @@ app.add_middleware(AuditMiddleware)
 # CORS — loosened for development; change later
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(cases_router.router)
-app.include_router(ufdr.router)
-app.include_router(artifacts.router)
-app.include_router(conversation.router)
-app.include_router(dashboard.router)
-app.include_router(audit.router)
-app.include_router(health.router)
+
+# Register routers with API versioning
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(cases_router.router, prefix="/api/v1")
+app.include_router(ufdr.router, prefix="/api/v1")
+app.include_router(artifacts.router, prefix="/api/v1")
+app.include_router(conversation.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(audit.router, prefix="/api/v1")
+app.include_router(health.router, prefix="/api/v1")

@@ -2,7 +2,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr
 from enum import Enum
 
-# Reuse the same roles you used in models
+# ---------- Roles ----------
 class UserRole(str, Enum):
     investigator = "investigator"
     admin = "admin"
@@ -26,7 +26,7 @@ class UserRead(UserBase):
     role: UserRole
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------- Response for APIs ----------
@@ -37,4 +37,15 @@ class UserOut(BaseModel):
     role: UserRole
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+# ---------- Auth Token ----------
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str

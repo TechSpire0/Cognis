@@ -10,6 +10,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { ChatAssistant } from './components/ChatAssistant';
 import { Login } from './components/Login';
 import { Signup } from './components/Signup';
+import api from "./services/api";
 
 export default function App() {
   const [currentView, setCurrentView] = useState('upload');
@@ -38,12 +39,37 @@ export default function App() {
     };
     setAuditLogs([newLog, ...auditLogs]);
   };
+  
+const handleLogin = () => {
+  setIsAuthenticated(true);
+  addAuditLog("Login", "User successfully logged in");
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    addAuditLog('Login', 'User successfully logged into system');
-  };
+  // Fetch current user from backend
+  api.get("/auth/users/me")
+    .then((res) => {
+      setCurrentUser({
+        name: res.data.username,
+        id: res.data.id,
+        role: res.data.role,
+      });
+      setCurrentView(res.data.role === "admin" ? "admin-cases" : "upload");
+    })
+    .catch(() => {
+      // fallback if request fails
+      setCurrentUser({ name: "Unknown", id: "NA", role: "investigator" });
+    });
+};
 
+const handleSignup = (userData) => {
+  setCurrentUser({
+    name: userData.username,
+    id: userData.id,
+    role: userData.role,
+  });
+  setCurrentView(userData.role === "admin" ? "admin-cases" : "upload");
+  setIsAuthenticated(true);
+  addAuditLog("Account Created", `New ${userData.role} account created for ${userData.username}`);
+};
   const handleLogout = () => {
     setIsAuthenticated(false);
     setAuthView('signup');
@@ -55,20 +81,7 @@ export default function App() {
     setAuthView('login');
   };
 
-  const handleSignup = (userData) => {
-    // Set user data based on signup
-    setCurrentUser({
-      name: userData.username,
-      id: userData.role === 'Admin' ? 'AD_001' : 'IO_001',
-      role: userData.role
-    });
-    
-    // Direct users to appropriate view based on role
-    setCurrentView(userData.role === 'Admin' ? 'admin-cases' : 'upload');
-    setIsAuthenticated(true);
-    addAuditLog('Account Created', `New ${userData.role} account created for ${userData.username}`);
-  };
-
+  
   const handleAdminPanelAccess = () => {
     if (currentUser.role === 'Admin') {
       setCurrentView('admin-cases');
@@ -134,6 +147,7 @@ export default function App() {
               <ChatAssistant 
                 onClose={() => setChatOpen(false)} 
                 addAuditLog={addAuditLog}
+                caseData={caseData}
               />
             )}
           </main>
