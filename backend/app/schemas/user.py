@@ -49,3 +49,9 @@ class Token(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class LoginInput(BaseModel):
+    email: EmailStr | None = None
+    username: str | None = None
+    password: str

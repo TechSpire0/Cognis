@@ -1,14 +1,14 @@
 # backend/app/routers/auth.py
 from datetime import timedelta
 from typing import Optional
-
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserOut, Token
+from app.schemas.user import UserCreate, UserOut, Token, LoginInput
 from app.core.security import (
     get_password_hash,
     verify_password,
@@ -40,29 +40,32 @@ async def signup(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def login(request: Request, db: AsyncSession = Depends(get_db)):
+async def login(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
     """
-    Accept either:
-      - application/x-www-form-urlencoded (OAuth2 form: username + password)
-      - application/json { "email": "...", "password": "..." } OR { "username": "...", "password": "..." }
-    Returns: {"access_token": "...", "token_type":"bearer"}
+    Handles both:
+    - Swagger (OAuth2 form data)
+    - JSON payloads from frontend
     """
-    content_type = request.headers.get("content-type", "")
+    username_or_email = form_data.username
+    password = form_data.password
 
-    if "application/x-www-form-urlencoded" in content_type:
-        form = await request.form()
-        username_or_email = form.get("username")
-        password = form.get("password")
-    else:
-        data = await request.json()
-        # allow frontend to send email or username
-        username_or_email = data.get("email") or data.get("username")
-        password = data.get("password")
+    # If no data came from form, check JSON
+    if not username_or_email or not password:
+        try:
+            data = await request.json()
+            username_or_email = data.get("email") or data.get("username")
+            password = data.get("password")
+        except Exception:
+            pass
 
     if not username_or_email or not password:
         raise HTTPException(status_code=422, detail="username/email and password required")
 
-    # Try lookup by email first, then username, then possibly username==email
+    # Lookup by email, then username
     result = await db.execute(select(User).where(User.email == username_or_email))
     user = result.scalars().first()
     if not user:
@@ -70,11 +73,7 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
         user = result.scalars().first()
 
     if not user or not verify_password(password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     access_token_expires = timedelta(minutes=60)
     token = create_access_token(

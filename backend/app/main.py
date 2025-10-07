@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.middleware.audit import AuditMiddleware
 # Now import routers (they can safely import models directly)
-from app.api.routes import auth, users, ufdr, health, artifacts, conversation, dashboard, audit
+from app.api.routes import auth, users, ufdr, artifacts, conversation, dashboard, audit
 from app.api.routes import cases as cases_router
 app = FastAPI(title="Cognis Backend")
 
@@ -32,4 +32,8 @@ app.include_router(artifacts.router, prefix="/api/v1")
 app.include_router(conversation.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(audit.router, prefix="/api/v1")
-app.include_router(health.router, prefix="/api/v1")
+
+#Reset the Database
+# alembic downgrade base
+# alembic upgrade head
+# 76dd4ed9-e497-4c44-a83e-fecf56b4e170

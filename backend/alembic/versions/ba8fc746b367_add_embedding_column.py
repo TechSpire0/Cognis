@@ -1,8 +1,8 @@
-"""add hashed_password to users
+"""add embedding column
 
-Revision ID: 8d1a6b266101
-Revises: eefb863f18d0
-Create Date: 2025-09-26 17:56:16.352976
+Revision ID: ba8fc746b367
+Revises: a3e5cf9e6e12
+Create Date: 2025-10-07 00:16:13.007416
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8d1a6b266101'
-down_revision: Union[str, Sequence[str], None] = 'eefb863f18d0'
+revision: str = 'ba8fc746b367'
+down_revision: Union[str, Sequence[str], None] = 'a3e5cf9e6e12'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

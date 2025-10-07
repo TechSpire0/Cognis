@@ -7,21 +7,22 @@ import tempfile
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, String
 from sqlalchemy.exc import IntegrityError
-
+from app.utils.parsers import parse_csv, parse_xml, parse_image, parse_audio, parse_document, parse_text, parse_video
 from app.core.security import get_current_user
 from app.db.deps import get_db
 from app.models.user import User
 from app.models.ufdrfile import UFDRFile
 from app.models.artifact import Artifact
 from app.utils.file_utils import safe_extract_zip, make_tempdir
+from app.utils.embedding_utils import generate_embedding
+import shutil
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/ufdr", tags=["UFDR"])
-
 
 # ---------- Utility ----------
 def sha256sum_from_path(file_path: str) -> str:
@@ -32,100 +33,42 @@ def sha256sum_from_path(file_path: str) -> str:
     return h.hexdigest()
 
 
-# ---------- Parsers ----------
-def parse_csv(file_path: str):
-    artifacts = []
-    with open(file_path, newline="", encoding="utf-8", errors="ignore") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            keys = {k.lower(): v for k, v in row.items()}
-            if "number" in keys and "duration" in keys:
-                artifacts.append({
-                    "type": "call",
-                    "text": f"Call to {keys.get('number')} duration {keys.get('duration')}s",
-                })
-            elif "name" in keys and "phone" in keys:
-                artifacts.append({
-                    "type": "contact",
-                    "text": f"{keys.get('name')} - {keys.get('phone')}",
-                })
-            else:
-                artifacts.append({
-                    "type": "csv_row",
-                    "text": str(row),
-                })
-    return artifacts
-
-
-def parse_xml(file_path: str):
-    artifacts = []
-    try:
-        tree = ET.parse(file_path)
-    except ET.ParseError:
-        return artifacts
-
-    root = tree.getroot()
-
-    # Contacts
-    for elem in root.findall(".//contact"):
-        name = elem.attrib.get("name") or elem.findtext("name")
-        number = elem.attrib.get("number") or elem.findtext("number")
-        if name or number:
-            artifacts.append({
-                "type": "contact",
-                "text": f"{name or ''} - {number or ''}".strip(" -"),
-            })
-
-    # SMS
-    for sms in root.findall(".//sms"):
-        sender = sms.attrib.get("address") or sms.findtext("address")
-        body = sms.attrib.get("body") or sms.findtext("body")
-        if body:
-            artifacts.append({
-                "type": "message",
-                "text": f"SMS from {sender}: {body}",
-            })
-
-    # WhatsApp
-    for msg in root.findall(".//message"):
-        sender = msg.attrib.get("sender") or msg.findtext("sender")
-        body = msg.attrib.get("body") or msg.findtext("body")
-        if body:
-            artifacts.append({
-                "type": "whatsapp",
-                "text": f"WhatsApp from {sender}: {body}",
-            })
-
-    # Calls
-    for call in root.findall(".//call"):
-        number = call.attrib.get("number") or call.findtext("number")
-        duration = call.attrib.get("duration") or call.findtext("duration")
-        if number:
-            artifacts.append({
-                "type": "call",
-                "text": f"Call to {number}, duration {duration or '?'}s",
-            })
-
-    return artifacts
-
-
+# ---------- ZIP Parser ----------
 def parse_zip(file_path: str):
-    """Safely extract and parse CSV/XML files inside a ZIP."""
+    """Safely extract and parse supported files inside a ZIP."""
     artifacts = []
+    supported_exts = (".csv", ".xml", ".jpg", ".png", ".mp3", ".wav", ".pdf", ".doc", ".txt", ".mp4", ".mkv")
+
     tmp_dir_path, tmp_obj = make_tempdir(prefix="ufdr_ex_")
     try:
         extracted_files = safe_extract_zip(file_path, tmp_dir_path)
         for fpath in extracted_files:
             lower = fpath.lower()
+            if not lower.endswith(supported_exts):
+                continue
+
+            # Parse based on type
             if lower.endswith(".csv"):
                 artifacts.extend(parse_csv(fpath))
             elif lower.endswith(".xml"):
                 artifacts.extend(parse_xml(fpath))
+            elif lower.endswith((".jpg", ".png")):
+                artifacts.extend(parse_image(fpath))
+            elif lower.endswith((".mp3", ".wav")):
+                artifacts.extend(parse_audio(fpath))
+            elif lower.endswith((".pdf", ".doc")):
+                artifacts.extend(parse_document(fpath))
+            elif lower.endswith(".txt"):
+                artifacts.extend(parse_text(fpath))
+            elif lower.endswith((".mp4", ".mkv")):
+                artifacts.extend(parse_video(fpath))
+
     finally:
         try:
             tmp_obj.cleanup()
         except Exception:
             pass
+
     return artifacts
 
 
@@ -136,14 +79,14 @@ async def upload_ufdr(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Secure UFDR upload handler."""
-    MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200 MB
-    allowed_exts = (".csv", ".xml", ".zip")
+    """Secure UFDR upload handler (ZIP-only)."""
+    MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 500 MB
+    allowed_exts = (".zip",)  # 🚫 Only ZIP uploads allowed
 
     raw_filename = (file.filename or "upload").replace("/", "_").replace("\\", "_")
     lower_fname = raw_filename.lower()
     if not any(lower_fname.endswith(ext) for ext in allowed_exts):
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+        raise HTTPException(status_code=400, detail="Only .zip files are supported")
 
     # Temporary save
     tmp_dir = tempfile.mkdtemp(prefix="upload_tmp_")
@@ -173,25 +116,29 @@ async def upload_ufdr(
         unique_suffix = uuid.uuid4().hex[:8]
         stored_filename = f"{unique_suffix}_{raw_filename}"
         final_path = os.path.join(UPLOAD_DIR, stored_filename)
-        os.replace(tmp_path, final_path)
+        shutil.move(tmp_path, final_path)
 
     except HTTPException:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
         raise
-    except Exception:
+    except Exception as e:
+        import traceback
+        print("UPLOAD ERROR:", traceback.format_exc())
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
-        raise HTTPException(status_code=500, detail="Upload failed")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
 
     # Insert UFDR record
     ufdr = UFDRFile(
         case_id=None,
         filename=raw_filename,
         storage_path=final_path,
-        meta={"hash": file_hash},
+        meta={"hash": file_hash, "uploaded_by": str(current_user.id)},
         uploaded_at=datetime.utcnow(),
     )
+
     db.add(ufdr)
     try:
         await db.commit()
@@ -202,14 +149,8 @@ async def upload_ufdr(
 
     await db.refresh(ufdr)
 
-    # Parse artifacts
-    artifacts = []
-    if lower_fname.endswith(".csv"):
-        artifacts = parse_csv(final_path)
-    elif lower_fname.endswith(".xml"):
-        artifacts = parse_xml(final_path)
-    elif lower_fname.endswith(".zip"):
-        artifacts = parse_zip(final_path)
+    # Parse contents of ZIP
+    artifacts = parse_zip(final_path)
 
     created_ids = []
     for a in artifacts:
@@ -221,11 +162,22 @@ async def upload_ufdr(
             raw=a,
             created_at=datetime.utcnow(),
         )
+
+        # Compute semantic embedding for RAG
+        try:
+            emb = generate_embedding(a.get("text") or "")
+        except Exception as e:
+            emb = None
+
+        if emb:
+            art.embedding = emb
+
         db.add(art)
         await db.flush()
         created_ids.append(str(art.id))
 
     await db.commit()
+
 
     return {
         "id": str(ufdr.id),
@@ -234,3 +186,36 @@ async def upload_ufdr(
         "uploaded_at": ufdr.uploaded_at.isoformat(),
         "artifacts_parsed": len(created_ids),
     }
+
+
+# ---------- List Endpoint ----------
+@router.get("/list")
+async def list_ufdr_files(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    List UFDR files.
+    - Admins see all files.
+    - Investigators see only their own uploads.
+    """
+    if getattr(current_user, "role", None) == "admin":
+        stmt = select(UFDRFile)
+    else:
+        stmt = select(UFDRFile).where(
+            UFDRFile.meta["uploaded_by"].cast(String) == str(current_user.id)
+        )
+
+    result = await db.execute(stmt)
+    files = result.scalars().all()
+
+    return [
+        {
+            "id": str(f.id),
+            "filename": f.filename,
+            "hash": f.meta.get("hash") if isinstance(f.meta, dict) else None,
+            "uploaded_by": f.meta.get("uploaded_by") if isinstance(f.meta, dict) else None,
+            "uploaded_at": f.uploaded_at.isoformat() if f.uploaded_at else None,
+        }
+        for f in files
+    ]
