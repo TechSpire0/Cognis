@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
 
+    CHAT_USE_REDIS: bool = True
+    CHAT_SESSION_TTL_SECONDS: int = 60 * 60 * 24 * 7  # 7 days
+
+
     # ✅ Backward compatibility aliases (for old routes)
     @property
     def SECRET_KEY(self) -> str:

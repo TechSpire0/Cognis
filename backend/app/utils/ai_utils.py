@@ -1,20 +1,29 @@
 # app/utils/ai_utils.py
 
-def build_forensic_prompt(query: str, context: str) -> str:
-    return f"""
-You are a digital forensic analyst assistant.
+from typing import List, Optional, Dict
 
-The following are artifacts extracted from a UFDR file (mobile device extraction). 
-Use them to answer the investigator's question as accurately and concisely as possible.
+def build_forensic_prompt(
+    q: str,
+    context: str,
+    prior_messages: Optional[List[Dict]] = None
+) -> str:
+    """
+    Build a forensic-aware prompt for the LLM.
+    Includes short system message, evidence context, and prior conversation.
+    """
+    system = "You are a forensic AI assistant analyzing UFDR data. Be precise and concise."
 
-Context:
-{context}
+    history_text = ""
+    if prior_messages:
+        for msg in prior_messages[-10:]:
+            role = msg.get("role", "user").capitalize()
+            text = msg.get("text", "")
+            if text:
+                history_text += f"{role}: {text}\n"
 
-Question:
-{query}
-
-Instructions:
-- Summarize findings clearly.
-- List call or message data in structured bullet points if applicable.
-- If data isn't sufficient, explicitly say so.
-"""
+    return (
+        f"{system}\n\n"
+        f"Context:\n{context}\n\n"
+        f"Conversation:\n{history_text}\n"
+        f"User: {q}\nAssistant:"
+    )

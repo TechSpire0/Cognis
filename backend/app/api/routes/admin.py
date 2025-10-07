@@ -12,7 +12,7 @@ from app.models.ufdrfile import UFDRFile
 from app.utils.audit_utils import create_audit
 from app.core.cache import del_pattern
 
-router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.patch("/ufdr/{ufdr_id}/soft_delete")
 async def soft_delete_ufdr(ufdr_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
