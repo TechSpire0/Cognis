@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON
+# backend/app/models/ufdrfile.py
+from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -10,11 +11,15 @@ class UFDRFile(Base):
     __tablename__ = "ufdr_files"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id = Column(UUID(as_uuid=True), nullable=True)
+    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True)
     filename = Column(String, nullable=False)
     storage_path = Column(String, nullable=False)
     meta = Column(JSON, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    # Soft-delete
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     # relationship back to artifacts
     artifacts = relationship("Artifact", back_populates="ufdr_file", cascade="all, delete")

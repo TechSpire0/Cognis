@@ -20,11 +20,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 async def get_current_user(
-    db: AsyncSession = Depends(get_db),      # ✅ let FastAPI inject a real session
-    token: str = Depends(oauth2_scheme)      # ✅ let FastAPI inject the token
+    db: AsyncSession = Depends(get_db),     
+    token: str = Depends(oauth2_scheme)   
 ):
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(
@@ -51,3 +51,29 @@ async def get_current_user(
 @router.get("/me")
 async def read_users_me(token: str = Depends(oauth2_scheme)):
     return {"token_received": token}
+
+@router.get("/investigators", summary="List all investigators (Admin only)")
+async def list_investigators(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Admin-only: View all investigators with IDs for case assignment."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can view investigators.",
+        )
+
+    stmt = select(User).where(User.role == "investigator").order_by(User.username.asc())
+    res = await db.execute(stmt)
+    investigators = res.scalars().all()
+
+    return [
+        {
+            "id": str(u.id),
+            "username": u.username,
+            "email": u.email,
+            "role": u.role,
+        }
+        for u in investigators
+    ]
