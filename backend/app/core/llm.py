@@ -5,8 +5,7 @@ from langchain_core.messages import HumanMessage
 
 # --- Load configuration ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")  # ✅ use 2.5 flash explicitly
-
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash") 
 if not GEMINI_API_KEY:
     raise ValueError("❌ Gemini API key not set. Please export GEMINI_API_KEY in your environment.")
 
@@ -15,7 +14,7 @@ llm = ChatGoogleGenerativeAI(
     model=GEMINI_MODEL,
     api_key=GEMINI_API_KEY,
     temperature=0.3,
-    max_output_tokens=8192,   # ✅ higher cap (8k+ tokens output)
+    max_output_tokens=8192,  
 )
 
 # --- Async wrapper ---

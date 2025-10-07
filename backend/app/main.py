@@ -33,7 +33,5 @@ app.include_router(conversation.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(audit.router, prefix="/api/v1")
 
-#Reset the Database
-# alembic downgrade base
-# alembic upgrade head
-# 76dd4ed9-e497-4c44-a83e-fecf56b4e170
+
+# TRUNCATE TABLE users, cases, ufdr_files, artifacts, audit_logs RESTART IDENTITY CASCADE;

@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, String
+from sqlalchemy import select, String, cast
 from sqlalchemy.exc import IntegrityError
 from app.utils.parsers import parse_csv, parse_xml, parse_image, parse_audio, parse_document, parse_text, parse_video
 from app.core.security import get_current_user
@@ -131,13 +131,16 @@ async def upload_ufdr(
 
 
     # Insert UFDR record
-    ufdr = UFDRFile(
-        case_id=None,
-        filename=raw_filename,
-        storage_path=final_path,
-        meta={"hash": file_hash, "uploaded_by": str(current_user.id)},
-        uploaded_at=datetime.utcnow(),
+    new_ufdr = UFDRFile(
+        filename=file.filename,
+        storage_path=path,
+        meta={
+            "uploaded_by": str(current_user.id),
+            "uploaded_at": datetime.utcnow().isoformat(),
+        },
+        case_id=case_id,
     )
+
 
     db.add(ufdr)
     try:
@@ -203,7 +206,7 @@ async def list_ufdr_files(
         stmt = select(UFDRFile)
     else:
         stmt = select(UFDRFile).where(
-            UFDRFile.meta["uploaded_by"].cast(String) == str(current_user.id)
+            UFDRFile.meta.op("->>")("uploaded_by") == str(current_user.id)
         )
 
     result = await db.execute(stmt)
