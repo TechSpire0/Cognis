@@ -8,6 +8,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
+from app.core.minio_client import upload_to_minio
 
 from app.utils.parsers import (
     parse_csv, parse_xml, parse_image, parse_audio,
@@ -85,7 +86,7 @@ async def upload_ufdr(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Secure UFDR upload handler — investigators must provide valid case_id."""
+   
     MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 500 MB
     allowed_exts = (".zip",)
 
@@ -100,8 +101,6 @@ async def upload_ufdr(
                 status_code=400,
                 detail="case_id is required for investigators"
             )
-
-        # Ensure they are assigned to this case
         res = await db.execute(
             select(CaseAssignment).where(
                 and_(
@@ -111,12 +110,9 @@ async def upload_ufdr(
             )
         )
         if res.scalar_one_or_none() is None:
-            raise HTTPException(
-                status_code=403,
-                detail="You are not assigned to this case",
-            )
+            raise HTTPException(status_code=403, detail="You are not assigned to this case")
 
-    # -------- Save temporary file --------
+    # -------- Save temporarily to disk --------
     tmp_dir = tempfile.mkdtemp(prefix="upload_tmp_")
     tmp_path = os.path.join(tmp_dir, raw_filename)
 
@@ -128,22 +124,21 @@ async def upload_ufdr(
             out_f.write(content)
 
         file_hash = sha256sum_from_path(tmp_path)
-        unique_suffix = uuid.uuid4().hex[:8]
-        stored_filename = f"{unique_suffix}_{raw_filename}"
-        final_path = os.path.join(UPLOAD_DIR, stored_filename)
-        shutil.move(tmp_path, final_path)
+        object_name = f"{uuid.uuid4().hex}/{raw_filename}"
+
+        # -------- Upload to MinIO --------
+        storage_path = upload_to_minio(tmp_path, object_name)
 
     except Exception as e:
         import traceback
         print("UPLOAD ERROR:", traceback.format_exc())
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     # -------- Save UFDR record --------
     new_ufdr = UFDRFile(
         filename=file.filename,
-        storage_path=final_path,
+        storage_path=storage_path,  # 👈 stored in MinIO now
         meta={
             "uploaded_by": str(current_user.id),
             "uploaded_at": datetime.utcnow().isoformat(),
@@ -158,11 +153,10 @@ async def upload_ufdr(
         await db.refresh(new_ufdr)
     except IntegrityError:
         await db.rollback()
-        os.remove(final_path)
         raise HTTPException(status_code=400, detail="Duplicate UFDR file")
 
     # -------- Parse and embed artifacts --------
-    artifacts = parse_zip(final_path)
+    artifacts = parse_zip(tmp_path)
     created_ids = []
     for a in artifacts:
         art = Artifact(
@@ -173,7 +167,6 @@ async def upload_ufdr(
             raw=a,
             created_at=datetime.utcnow(),
         )
-
         try:
             emb = generate_embedding(a.get("text") or "")
             if emb:
@@ -197,11 +190,15 @@ async def upload_ufdr(
         path="/ufdr/upload",
         status_code=201,
     )
+    
+    # -------- Cleanup --------
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return {
         "id": str(new_ufdr.id),
         "filename": new_ufdr.filename,
         "hash": file_hash,
+        "storage_path": storage_path,
         "uploaded_at": new_ufdr.uploaded_at.isoformat(),
         "artifacts_parsed": len(created_ids),
     }

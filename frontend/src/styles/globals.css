@@ -1,81 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --background: #0D1117;
+  --foreground: #E6EDF3;
+  --card: #161B22;
+  --card-foreground: #E6EDF3;
+  --popover: #161B22;
+  --popover-foreground: #E6EDF3;
+  --primary: #00BFA5;
+  --primary-foreground: #E6EDF3;
+  --secondary: #6C63FF;
+  --secondary-foreground: #E6EDF3;
+  --muted: #21262D;
+  --muted-foreground: #9BA1A6;
+  --accent: #00BFA5;
+  --accent-foreground: #E6EDF3;
+  --destructive: #FF5252;
+  --destructive-foreground: #E6EDF3;
+  --success: #00BFA5;
+  --warning: #6C63FF;
+  --border: #30363D;
+  --input: #30363D;
+  --input-background: #161B22;
+  --ring: #03DAC6;
+  --highlight: #03DAC6;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --chart-1: #00BFA5;
+  --chart-2: #6C63FF;
+  --chart-3: #03DAC6;
+  --chart-4: #9BA1A6;
+  --chart-5: #FF5252;
+  --radius: 0.75rem;
+  --sidebar: #0D1117;
+  --sidebar-foreground: #E6EDF3;
+  --sidebar-primary: #00BFA5;
+  --sidebar-primary-foreground: #E6EDF3;
+  --sidebar-accent: #161B22;
+  --sidebar-accent-foreground: #E6EDF3;
+  --sidebar-border: #30363D;
+  --sidebar-ring: #03DAC6;
 }
 
 @theme inline {
@@ -95,10 +62,11 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-input-background: var(--input-background);
-  --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -126,6 +94,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 }
 
@@ -135,33 +104,43 @@
 @layer base {
   :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
     h1 {
-      font-size: var(--text-2xl);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #E6EDF3 0%, #9BA1A6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     h2 {
-      font-size: var(--text-xl);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 1.875rem;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      color: #E6EDF3;
     }
 
     h3 {
-      font-size: var(--text-lg);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+      color: #E6EDF3;
     }
 
     h4 {
-      font-size: var(--text-base);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #E6EDF3;
     }
 
     p {
       font-size: var(--text-base);
       font-weight: var(--font-weight-normal);
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     label {
@@ -184,46 +163,57 @@
   }
 }
 
-html {
-  font-size: var(--font-size);
+/* Custom Utilities for Modern Dark Design */
+@layer utilities {
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(0, 191, 165, 0.3);
+  }
+  
+  .glow-secondary {
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
+  }
+  
+  .glow-hover:hover {
+    box-shadow: 0 0 25px rgba(3, 218, 198, 0.4);
+    border-color: #03DAC6;
+  }
+
+  .card-glow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(0, 191, 165, 0.1);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(0, 191, 165, 0.5);
+  }
 }
 
-/* Custom Scrollbar Styles */
-@layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
+/* Custom Scrollbar Styling - Dark Theme */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4a4a #2c2c2c;
+}
 
-  .scrollbar-thumb-muted {
-    scrollbar-color: var(--muted) transparent;
-  }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
 
-  .scrollbar-track-transparent {
-    scrollbar-color: var(--muted) transparent;
-  }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #2c2c2c;
+  border-radius: 6px;
+}
 
-  /* Webkit scrollbars for better cross-browser support */
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 6px;
+  border: 2px solid #2c2c2c;
+}
 
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6a6a6a;
+}
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: var(--muted);
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-corner {
-    background: transparent;
-  }
+html {
+  font-size: var(--font-size);
 }
