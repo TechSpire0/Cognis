@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import markdown
 from app.models.ufdrfile import UFDRFile
 from app.models.artifact import Artifact
 from app.models.user import User
@@ -29,6 +29,14 @@ def generate_pdf(ufdr, artifacts, ai_summary, logo_path=None):
     <head>
       <meta charset="utf-8">
       <style>
+        @page {
+          @bottom-center {
+            content: "Cognis | Confidential Report";
+            font-size: 9pt;
+            color: #aaa;
+          }
+        }
+
         body { font-family: Arial, sans-serif; margin: 40px; color: #222; }
         header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
         header img { height: 60px; }
@@ -46,26 +54,38 @@ def generate_pdf(ufdr, artifacts, ai_summary, logo_path=None):
           transform: rotate(-30deg); z-index: -1;
           font-weight: bold;
         }
+        .summary {
+          background: #f9f9f9;
+          padding: 12px 18px;
+          border-left: 4px solid #004080;
+          border-radius: 5px;
+          line-height: 1.5;
+        }
       </style>
+
     </head>
     <body>
       <div class="watermark">COGNIS</div>
 
       <header>
-        {% if logo_path %}<img src="{{ logo_path }}" alt="Logo">{% endif %}
-        <h1>Cognis Forensic Report</h1>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          {% if logo_path %}<img src="{{ logo_path }}" alt="Cognis Logo" style="height:70px;">{% endif %}
+          <h1 style="text-align:center; flex-grow:1;">Cognis Forensic Report</h1>
+        </div>
       </header>
 
       <div class="meta">
         <p><b>Case ID:</b> {{ ufdr.case_id or 'N/A' }}<br>
+           <b>Uploaded By:</b> {{ ufdr.meta.uploaded_by if ufdr.meta and ufdr.meta.uploaded_by else 'N/A' }}<br>
            <b>Filename:</b> {{ ufdr.filename or 'N/A' }}<br>
            <b>Uploaded At:</b> {{ ufdr.uploaded_at or 'N/A' }}<br>
            <b>Generated On:</b> {{ generated_on }}</p>
       </div>
 
       <h2>AI Summary</h2>
-      <p>{{ ai_summary or 'No AI summary generated.' }}</p>
-
+      <div class="summary">
+         {{ ai_summary | safe if ai_summary else 'No AI summary generated.' }}
+      </div>
       <h2>Artifact Summary</h2>
       {% if artifacts %}
         <table>
@@ -88,10 +108,11 @@ def generate_pdf(ufdr, artifacts, ai_summary, logo_path=None):
     </html>
     """)
 
+    ai_summary_html = markdown.markdown(ai_summary)
     html = html_template.render(
         ufdr=ufdr,
         artifacts=artifacts,
-        ai_summary=ai_summary,
+        ai_summary=ai_summary_html,
         generated_on=datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         logo_path=logo_path
     )
