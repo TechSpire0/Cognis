@@ -4,22 +4,27 @@ from typing import Any, Dict, Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer   # ✅ missing import added
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.config import settings
-from app.db.deps import get_db     # ✅ fixed import
+from app.db.session import get_db                   # ✅ use session, not deps
 from app.models.user import User
+
+# ---------- OAuth2 for Swagger ----------
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 # ---------- Password Hashing ----------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def get_password_hash(password: str) -> str:
-    """Return a bcrypt hash, truncated to 72 bytes (bcrypt limit)."""
+    """Return a bcrypt hash, truncating to 72 bytes (bcrypt limit)."""
     if len(password.encode("utf-8")) > 72:
         password = password[:72]
     return pwd_context.hash(password)
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify bcrypt hash safely."""
@@ -29,9 +34,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # ---------- JWT / Auth ----------
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
-
-
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """Create JWT token with expiration."""
     to_encode = data.copy()
@@ -40,7 +42,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     )
     to_encode.update({"exp": expire})
 
-    # ✅ ensure user_id (sub) is always string
+    # ensure user_id (sub) is always string
     if "sub" in to_encode:
         to_encode["sub"] = str(to_encode["sub"])
 
@@ -57,8 +59,8 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     try:
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET,
-            algorithms=[settings.JWT_ALGORITHM],
+            getattr(settings, "JWT_SECRET", "dev-secret"),
+            algorithms=[getattr(settings, "JWT_ALGORITHM", "HS256")],
         )
         return payload
     except JWTError:

@@ -1,6 +1,8 @@
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 from enum import Enum
+from typing import Optional
+from datetime import datetime
 
 # ---------- Roles ----------
 class UserRole(str, Enum):
@@ -20,6 +22,19 @@ class UserCreate(UserBase):
     role: UserRole
 
 
+# ---------- Admin Create (New) ----------
+class AdminCreate(UserBase):
+    role: UserRole
+    temp_password: Optional[str] = None  # optional override
+
+
+# ---------- Change Password ----------
+class ChangePassword(BaseModel):
+    username_or_email: str
+    old_password: str
+    new_password: str
+
+
 # ---------- Read/Output ----------
 class UserRead(UserBase):
     id: UUID
@@ -35,6 +50,8 @@ class UserOut(BaseModel):
     username: str
     email: EmailStr
     role: UserRole
+    force_password_change: Optional[bool] = False
+    last_password_changed: Optional[datetime] = None
 
     class Config:
         from_attributes = True

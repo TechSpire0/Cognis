@@ -5,12 +5,15 @@ from sqlalchemy.future import select
 from sqlalchemy import delete
 from datetime import datetime, timedelta
 import os
-from app.db.deps import get_db
+from app.db.session import get_db
 from app.core.security import get_current_user
-from app.models.user import User
 from app.models.ufdrfile import UFDRFile
 from app.utils.audit_utils import create_audit
 from app.core.cache import del_pattern
+from app.models.user import User, UserRole
+from app.schemas.user import AdminCreate, UserOut
+from app.core.security import get_password_hash
+import secrets
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -90,3 +93,58 @@ async def run_retention(days: int = Body(..., embed=True), mode: str = Body("sof
     await db.commit()
     await create_audit(db, str(current_user.id), None, "retention", "POST", "/api/v1/admin/retention", 200, None)
     return {"deleted": affected, "mode": mode}
+
+
+@router.post("/users/create", response_model=UserOut)
+async def create_user_admin(
+    payload: AdminCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Admin-only: Create new admin or investigator accounts."""
+    if getattr(current_user, "role", None) != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    q = await db.execute(
+        select(User).where(
+            (User.email == payload.email) | (User.username == payload.username)
+        )
+    )
+    if q.scalars().first():
+        raise HTTPException(status_code=400, detail="Username or email already exists")
+
+    temp_password = payload.temp_password or secrets.token_urlsafe(8)
+    hashed = get_password_hash(temp_password)
+
+    new_user = User(
+        username=payload.username,
+        email=payload.email,
+        hashed_password=hashed,
+        role=payload.role,
+        force_password_change=True,
+    )
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    await create_audit(
+        db,
+        str(current_user.id),
+        None,
+        "user_create",
+        "POST",
+        "/api/v1/admin/users/create",
+        201,
+        None,
+    )
+
+    # Return temp password ONLY once to admin
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email,
+        "role": new_user.role,
+        "force_password_change": new_user.force_password_change,
+        "temp_password": temp_password,
+    }
