@@ -3,7 +3,7 @@ import app.db.base
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.audit import AuditMiddleware
-from app.api.routes import auth, users, ufdr, artifacts, conversation, dashboard, audit, admin
+from app.api.routes import auth, users, ufdr, artifacts, conversation, dashboard, audit, admin, report
 from app.api.routes import cases as cases_router
 from app.db.session import get_db
 from sqlalchemy.future import select
@@ -35,6 +35,7 @@ app.include_router(cases_router.router, prefix="/api/v1")
 app.include_router(ufdr.router, prefix="/api/v1")
 app.include_router(artifacts.router, prefix="/api/v1")
 app.include_router(conversation.router, prefix="/api/v1")
+app.include_router(report.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(audit.router, prefix="/api/v1")
 
