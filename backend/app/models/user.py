@@ -1,3 +1,5 @@
+# backend/app/models/user.py
+
 import uuid
 import enum
 from datetime import datetime
@@ -26,3 +28,4 @@ class User(Base):
     last_password_changed = Column(DateTime, nullable=True, default=None)
 
     cases = relationship("Case", back_populates="user")
+    audit_logs = relationship("AuditLog", back_populates="user")

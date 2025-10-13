@@ -1,9 +1,10 @@
-# backend/app/models/audit_log.py
+# backend/app/models/auditlog.py
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
 from app.db.base import Base
+from sqlalchemy.orm import relationship
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
@@ -15,7 +16,9 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     user_agent = Column(String, nullable=True)
 
-    # Added fields
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     ip_address = Column(String(45), nullable=True)
-    action_type = Column(String(50), nullable=True)  # e.g. upload, delete, query, assign
+    action_type = Column(String(50), nullable=True)
+
+    # ✅ relationship for back-reference
+    user = relationship("User", back_populates="audit_logs")
