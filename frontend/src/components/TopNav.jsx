@@ -1,7 +1,6 @@
 import {
   Home,
   Upload,
-  Search,
   FileDown,
   LogOut,
   FolderOpen,
@@ -18,7 +17,6 @@ export function TopNav({ currentPage, onNavigate, userRole }) {
   const investigatorItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "upload", label: "Upload", icon: Upload },
-    { id: "search", label: "Search", icon: Search },
     { id: "chat", label: "AI Chat", icon: MessageSquare },
     { id: "reports", label: "Reports", icon: FileDown },
   ];

@@ -313,3 +313,18 @@ export async function getDashboardSummary() {
 
   return res.json();
 }
+
+export async function getInvestigatorCases() {
+  const [user, myCases] = await Promise.all([getCurrentUser(), getCases()]);
+
+  return { user, myCases };
+}
+
+
+export async function getUfdrFiles(caseId) {
+  return apiGet("/ufdr/list", { case_id: caseId });
+}
+
+export async function askChat(ufdrId, query) {
+  return apiPost(`/chat/ask/${ufdrId}?q=${encodeURIComponent(query)}`);
+}

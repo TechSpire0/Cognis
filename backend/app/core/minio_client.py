@@ -1,3 +1,4 @@
+# app/core/minio_client.py
 from minio import Minio
 from app.core.config import settings
 

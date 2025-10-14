@@ -1,3 +1,4 @@
+## backend/app/api/routes/ufdr.py
 import os
 import hashlib
 import uuid
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 from app.core.minio_client import upload_to_minio
-
+from fastapi.concurrency import run_in_threadpool
 from app.utils.parsers import (
     parse_csv, parse_xml, parse_image, parse_audio,
     parse_document, parse_text, parse_video
@@ -127,7 +128,9 @@ async def upload_ufdr(
         object_name = f"{uuid.uuid4().hex}/{raw_filename}"
 
         # -------- Upload to MinIO --------
-        storage_path = upload_to_minio(tmp_path, object_name)
+       
+        storage_path = await run_in_threadpool(upload_to_minio, tmp_path, object_name)
+
 
     except Exception as e:
         import traceback
@@ -149,8 +152,7 @@ async def upload_ufdr(
 
     db.add(new_ufdr)
     try:
-        await db.commit()
-        await db.refresh(new_ufdr)
+        await db.flush()
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Duplicate UFDR file")
@@ -168,7 +170,7 @@ async def upload_ufdr(
             created_at=datetime.utcnow(),
         )
         try:
-            emb = generate_embedding(a.get("text") or "")
+            emb = await run_in_threadpool(generate_embedding, a.get("text") or "")
             if emb:
                 art.embedding = emb
         except Exception:
@@ -179,6 +181,15 @@ async def upload_ufdr(
         created_ids.append(str(art.id))
 
     await db.commit()
+
+    response_payload = {
+        "id": str(getattr(new_ufdr, "id", None)) or str(uuid.uuid4()),  # fallback safe
+        "filename": file.filename,
+        "hash": file_hash,
+        "storage_path": storage_path,
+        "uploaded_at": datetime.utcnow().isoformat(),
+        "artifacts_parsed": len(created_ids),
+    }
 
     # -------- Audit Log --------
     await create_audit(
@@ -194,14 +205,7 @@ async def upload_ufdr(
     # -------- Cleanup --------
     shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    return {
-        "id": str(new_ufdr.id),
-        "filename": new_ufdr.filename,
-        "hash": file_hash,
-        "storage_path": storage_path,
-        "uploaded_at": new_ufdr.uploaded_at.isoformat(),
-        "artifacts_parsed": len(created_ids),
-    }
+    return response_payload
 
 
 # ---------- List Endpoint ----------

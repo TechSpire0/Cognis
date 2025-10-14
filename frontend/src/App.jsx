@@ -3,7 +3,6 @@ import { AuthPages } from "./components/AuthPages";
 import { TopNav } from "./components/TopNav";
 import { Dashboard } from "./components/Dashboard";
 import { UploadPage } from "./components/UploadPage";
-import { SearchPage } from "./components/SearchPage";
 import { ChatAI } from "./components/ChatAI";
 import { ReportsPage } from "./components/ReportsPage";
 import { AdminDashboard } from "./components/AdminDashboard";
@@ -28,7 +27,11 @@ export default function App() {
   };
 
   // Auth pages (full screen)
-  if (currentPage === "login" || currentPage === "signup" || currentPage === "forgot-password") {
+  if (
+    currentPage === "login" ||
+    currentPage === "signup" ||
+    currentPage === "forgot-password"
+  ) {
     return (
       <AuthPages
         page={currentPage} // JSX doesn't need type casting
@@ -48,14 +51,17 @@ export default function App() {
 
       <div className="flex-1 overflow-hidden">
         {/* Investigator Pages */}
-        {currentPage === "dashboard" && <Dashboard onNavigate={handleNavigate} />}
+        {currentPage === "dashboard" && (
+          <Dashboard onNavigate={handleNavigate} />
+        )}
         {currentPage === "upload" && <UploadPage />}
-        {currentPage === "search" && <SearchPage />}
         {currentPage === "chat" && <ChatAI />}
         {currentPage === "reports" && <ReportsPage />}
 
         {/* Admin Pages */}
-        {currentPage === "admin-dashboard" && <AdminDashboard onNavigate={handleNavigate} />}
+        {currentPage === "admin-dashboard" && (
+          <AdminDashboard onNavigate={handleNavigate} />
+        )}
         {currentPage === "case-management" && <CaseManagement />}
         {currentPage === "user-management" && <UserManagement />}
         {currentPage === "audit-logs" && <AuditLogs />}

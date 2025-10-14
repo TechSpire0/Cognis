@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getCurrentUser, getDashboardSummary } from "../services/api";
 import {
   Card,
   CardContent,
@@ -15,30 +16,37 @@ import {
   Upload,
   RotateCcw,
   Activity,
-  TrendingUp,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getDashboardSummary } from "../services/api";
 
 export function AdminDashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  async function fetchSummary() {
-    try {
-      const data = await getDashboardSummary();
-      setSummary(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to fetch dashboard summary");
-    }
-  }
-
+  // 🔹 Fetch user and dashboard summary together
   useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const [me, summaryData] = await Promise.all([
+          getCurrentUser(),
+          getDashboardSummary(),
+        ]);
+        setUser(me);
+        setSummary(summaryData);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch dashboard summary");
+      } finally {
+        setLoading(false);
+      }
+    }
+
     const token = localStorage.getItem("token");
     if (token) {
-      fetchSummary();
+      fetchData();
     } else {
       console.log("No token found, skipping dashboard fetch.");
     }
@@ -81,24 +89,16 @@ export function AdminDashboard() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-[#E6EDF3] mb-2">Admin Dashboard</h1>
+            <h1 className="text-[#E6EDF3] mb-2">
+              Welcome,{" "}
+              {user?.username
+                ? user.username.charAt(0).toUpperCase() + user.username.slice(1)
+                : "Admin"}
+            </h1>
             <p className="text-[#9BA1A6]">
-              Overview of users, UFDR uploads, and digital evidence metrics
+              System overview and forensic intelligence metrics
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="border-[#30363D] text-[#E6EDF3] hover:bg-[#161B22] flex items-center gap-2"
-            onClick={fetchSummary}
-            disabled={loading}
-          >
-            <RotateCcw
-              className={`w-4 h-4 transition-transform ${
-                loading ? "animate-spin" : ""
-              }`}
-            />
-            Refresh
-          </Button>
         </div>
 
         {/* Stats Grid */}
@@ -171,7 +171,7 @@ export function AdminDashboard() {
 
           {/* Insights Panel */}
           <div className="space-y-6">
-            {/* Activity summary (placeholder, no backend changes) */}
+            {/* Activity summary */}
             <Card className="bg-[#161B22] border-[#30363D] card-glow">
               <CardHeader>
                 <CardTitle className="text-[#E6EDF3] flex items-center gap-2">
