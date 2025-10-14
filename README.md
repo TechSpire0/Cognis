@@ -285,16 +285,6 @@ frontend/dist/
 
 ---
 
-## 13. Contributing
-
-1. Fork the repository
-2. Create a new branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -m "Added feature-name"`
-4. Push branch: `git push origin feature-name`
-5. Create Pull Request
-
----
-
 ## Summary
 
 Cognis is a **production-ready AI forensic platform** combining FastAPI, React, and Gemini with hybrid storage (Local + MinIO) for secure and efficient handling of UFDR-based investigations. The system ensures scalability, reliability, and compliance with forensic evidence retention standards.
