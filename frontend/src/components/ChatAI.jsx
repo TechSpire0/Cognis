@@ -10,6 +10,10 @@ import {
 } from "./ui/select";
 import { Send, Bot, User, ChevronDown } from "lucide-react";
 import { getCases, getUfdrFiles, askChat } from "../services/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+
 
 export function ChatAI() {
   const [cases, setCases] = useState([]);
@@ -98,52 +102,47 @@ export function ChatAI() {
   };
 
   // Handle sending message
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !selectedCase || !selectedUfdr) return;
+const handleSendMessage = async () => {
+  if (!inputMessage.trim() || !selectedCase || !selectedUfdr) return;
 
-    const userMsg = {
-      id: messages.length + 1,
-      role: "user",
-      content: inputMessage.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputMessage("");
-    setSending(true);
-
-    try {
-      // Temporary placeholder
-      const thinkingMsg = {
-        id: messages.length + 2,
-        role: "assistant",
-        content: "Analyzing UFDR data... please wait ⏳",
-      };
-      setMessages((prev) => [...prev, thinkingMsg]);
-
-      const res = await askChat(selectedUfdr, userMsg.content);
-
-      // Replace placeholder with response
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === thinkingMsg.id
-            ? { ...m, content: res.answer || "[No response received.]" }
-            : m
-        )
-      );
-    } catch (e) {
-      console.error("Chat failed:", e);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          role: "assistant",
-          content: "⚠️ Error: Failed to get AI response. Please try again.",
-        },
-      ]);
-    } finally {
-      setSending(false);
-    }
+  const userMsg = {
+    id: messages.length + 1,
+    role: "user",
+    content: inputMessage.trim(),
   };
+
+  setMessages((prev) => [...prev, userMsg]);
+  setInputMessage("");
+  setSending(true);
+
+  try {
+
+    const res = await askChat(selectedUfdr, userMsg.content);
+
+    // ✅ Just append the final assistant message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        role: "assistant",
+        content: res.answer || "[No response received.]",
+      },
+    ]);
+  } catch (e) {
+    console.error("Chat failed:", e);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        role: "assistant",
+        content: "⚠️ Error: Failed to get AI response. Please try again.",
+      },
+    ]);
+  } finally {
+    setSending(false);
+  }
+};
+
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -152,7 +151,7 @@ export function ChatAI() {
     }
   };
 
- return (
+return (
   <div className="flex flex-col h-full bg-[#0D1117]">
     {/* Case & UFDR Selector */}
     <div className="flex-shrink-0 border-b border-[#30363D] bg-[#0D1117] px-8 py-4">
@@ -249,9 +248,7 @@ export function ChatAI() {
             border-radius: 4px;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #484f58; }
-          .fade-in {
-            animation: fadeIn 0.4s ease;
-          }
+          .fade-in { animation: fadeIn 0.4s ease; }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
@@ -298,40 +295,33 @@ export function ChatAI() {
                     }`}
                   >
                     {message.role === "assistant" ? (
-                      <div className="text-[#E6EDF3] leading-relaxed prose prose-invert max-w-none">
-                        {message.content.split("\n").map((line, i) => {
-                          if (line.startsWith("*")) {
-                            return (
-                              <div
-                                key={i}
-                                className="text-sm text-[#C9D1D9] border-l border-[#2D333B] pl-3 py-1"
-                              >
-                                {line.replace(/^\*\s*/, "")}
-                              </div>
-                            );
-                          } else if (line.match(/^[A-Z].*:/)) {
-                            return (
-                              <p
-                                key={i}
-                                className="font-medium text-[#E6EDF3] mt-2"
-                              >
-                                {line}
-                              </p>
-                            );
-                          } else if (line.trim().length === 0) {
-                            return <div key={i} className="h-2" />;
-                          } else {
-                            return (
-                              <p
-                                key={i}
-                                className="text-[#C9D1D9] text-[15px] leading-relaxed"
-                              >
-                                {line}
-                              </p>
-                            );
-                          }
-                        })}
-                      </div>
+                      <ReactMarkdown
+  remarkPlugins={[remarkGfm]}
+  rehypePlugins={[rehypeHighlight]}
+  components={{
+    p: ({ children }) => (
+      <p className="text-[#C9D1D9] text-[15px] leading-relaxed my-2">
+        {children}
+      </p>
+    ),
+    strong: ({ children }) => (
+      <strong className="text-[#E6EDF3] font-semibold">{children}</strong>
+    ),
+    li: ({ children }) => (
+      <li className="ml-5 list-disc text-[#C9D1D9] leading-relaxed">
+        {children}
+      </li>
+    ),
+    code: ({ children }) => (
+      <code className="bg-[#161B22] px-1 py-0.5 rounded text-[#E6EDF3] text-sm">
+        {children}
+      </code>
+    ),
+  }}
+>
+  {message.content}
+</ReactMarkdown>
+
                     ) : (
                       <p className="text-[#E6EDF3] leading-relaxed whitespace-pre-wrap">
                         {message.content}

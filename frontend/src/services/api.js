@@ -328,3 +328,5 @@ export async function getUfdrFiles(caseId) {
 export async function askChat(ufdrId, query) {
   return apiPost(`/chat/ask/${ufdrId}?q=${encodeURIComponent(query)}`);
 }
+
+

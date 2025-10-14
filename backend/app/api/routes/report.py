@@ -1,3 +1,5 @@
+# app/api/routes/report.py
+
 from io import BytesIO
 from datetime import datetime
 from typing import List
@@ -17,7 +19,7 @@ import pdfkit
 from jinja2 import Template
 import os
 
-router = APIRouter(prefix="/api/v1/report", tags=["report"])
+router = APIRouter(prefix="/report", tags=["report"])
 
 
 # -------------------- HTML → PDF generator --------------------

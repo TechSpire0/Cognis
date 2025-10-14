@@ -1,3 +1,5 @@
+# app/core/pdf_renderer.py
+
 from io import BytesIO
 from datetime import datetime
 from weasyprint import HTML, CSS

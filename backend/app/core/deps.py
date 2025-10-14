@@ -6,10 +6,8 @@ from jose import jwt, JWTError
 from app.core.config import settings
 from pydantic import BaseModel
 
-# backend/app/core/deps.py
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import SessionLocal  # adjust import if database.py is elsewhere
+from app.database import SessionLocal  
 
 async def get_db() -> AsyncSession:
     async with SessionLocal() as session:

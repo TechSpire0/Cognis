@@ -15,7 +15,7 @@ llm = ChatGoogleGenerativeAI(
     model=settings.GEMINI_MODEL,
     api_key=settings.GEMINI_API_KEY,
     temperature=0.3,
-    max_output_tokens=8192,
+    max_output_tokens=16000,
 )
 
 async def _generate_response_raw(prompt: str) -> str:
