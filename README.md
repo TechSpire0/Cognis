@@ -6,6 +6,9 @@
 
 ---
 
+### 🎥 Project Demo  
+[![YouTube Video](https://img.shields.io/badge/Watch%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/ooD6o1OPmwo)
+
 ## 1. Overview
 
 **Cognis** is a full-stack digital forensic intelligence platform built for **law enforcement**, **cybercrime units**, and **digital forensic investigators**. It automates the ingestion, classification, and analysis of **UFDR (Universal Forensic Data Reports)** from mobile and digital devices.
